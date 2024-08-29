@@ -1,0 +1,26 @@
+// - **Explanation**: Inheritance allows an object to inherit properties and methods from another object. JavaScript uses prototypal inheritance, where objects inherit directly from other objects.
+// - **Example**: 
+  function Animal(name) {
+    this.name = name;
+  }
+
+  Animal.prototype.noise = function() {
+    console.log(this.name + " makes a noise.");
+  };
+
+  function Dog(name) {
+    Animal.call(this, name);
+  }
+
+  Dog.prototype = Object.create(Animal.prototype);
+  Dog.prototype.constructor = Dog;
+
+  Dog.prototype.speak = function() {
+    console.log(this.name + " barks.");
+  };
+  
+
+  let dog = new Dog("Rex");
+  dog.speak(); // Output: Rex barks.
+  dog.noise();
+  
