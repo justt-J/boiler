@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pseudo Postman</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 16px; max-width: 900px; margin: 0 auto; }
+      h2 { margin: 0 0 12px; }
+      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      label { font-weight: 600; }
+      select, input, textarea, button { font-size: 14px; }
+      input, select { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+      textarea { width: 100%; min-height: 140px; padding: 10px; border: 1px solid #ccc; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+      button { padding: 10px 14px; border: 0; border-radius: 10px; cursor: pointer; }
+      button.primary { background: #111; color: white; }
+      button.secondary { background: #eee; }
+      pre { background: #f4f4f4; padding: 12px; border-radius: 12px; overflow: auto; }
+      .card { border: 1px solid #e5e5e5; border-radius: 14px; padding: 14px; margin-top: 12px; }
+      .muted { color: #666; font-size: 12px; }
+      .error { color: #b00020; font-weight: 600; }
+      .success { color: #0b6b2d; font-weight: 600; }
+      .grow { flex: 1; min-width: 260px; }
+    </style>
+  </head>
+
+  <body>
+    <h2>REST PlayGround</h2>
+    <div class="muted">
+      Tip: Use <code>/students</code> for collection and <code>/students/123</code> for single resource.
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="method">Method</label><br />
+          <select id="method" onchange="onMethodChange()">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
+        </div>
+
+        <div class="grow">
+          <label for="baseurl">Base URL</label><br />
+          <input id="baseurl" class="grow" value="http://localhost:3000" />
+        </div>
+
+        <div class="grow">
+          <label for="path">Path</label><br />
+          <input id="path" class="grow" value="/students" />
+        </div>
+      </div>
+
+      <div style="height: 10px;"></div>
+
+      <div class="row">
+        <div class="grow">
+          <label for="query">Query params (optional)</label><br />
+          <input
+            id="query"
+            class="grow"
+            placeholder='Example: page=1&limit=10'
+          />
+          <div class="muted">Will be appended to the URL as <code>?key=value&amp;...</code></div>
+        </div>
+
+        <div>
+          <label>&nbsp;</label><br />
+          <button class="secondary" onclick="fillExamples()">Fill Example</button>
+        </div>
+
+        <div>
+          <label>&nbsp;</label><br />
+          <button class="primary" onclick="send()">Send Request</button>
+        </div>
+      </div>
+
+      <div style="height: 10px;"></div>
+
+      <div>
+        <label for="body">JSON Body (for POST / PUT / PATCH)</label>
+        <textarea id="body" spellcheck="false">{}</textarea>
+        <div class="muted">
+          For <b>PUT</b>, send full resource: <code>{"id":3,"name":"Geek3 Updated"}</code><br />
+          For <b>PATCH</b>, send partial fields: <code>{"name":"Only this changes"}</code>
+        </div>
+      </div>
+
+      <div style="height: 10px;"></div>
+
+      <div class="row">
+        <div class="grow">
+          <label>Computed URL</label><br />
+          <input id="computedUrl" class="grow" readonly />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="status" class="muted">No request yet.</div>
+      <pre id="out">Response will appear here…</pre>
+    </div>
+
+    <script>
+      const methodEl = document.getElementById("method");
+      const baseurlEl = document.getElementById("baseurl");
+      const pathEl = document.getElementById("path");
+      const queryEl = document.getElementById("query");
+      const bodyEl = document.getElementById("body");
+      const outEl = document.getElementById("out");
+      const statusEl = document.getElementById("status");
+      const computedUrlEl = document.getElementById("computedUrl");
+
+      function buildUrl() {
+        const base = baseurlEl.value.trim().replace(/\/+$/, "");
+        const path = pathEl.value.trim().startsWith("/") ? pathEl.value.trim() : "/" + pathEl.value.trim();
+        const q = queryEl.value.trim();
+
+        const url = q ? `${base}${path}?${q}` : `${base}${path}`;
+        computedUrlEl.value = url;
+        return url;
+      }
+
+      function setStatus(text, kind = "muted") {
+        statusEl.className = kind === "error" ? "error" : kind === "success" ? "success" : "muted";
+        statusEl.textContent = text;
+      }
+
+      function pretty(obj) {
+        return JSON.stringify(obj, null, 2);
+      }
+
+      function onMethodChange() {
+        const m = methodEl.value;
+        const needsBody = (m === "POST" || m === "PUT" || m === "PATCH");
+        bodyEl.disabled = !needsBody;
+        bodyEl.style.opacity = needsBody ? "1" : "0.5";
+        if (!needsBody) bodyEl.value = "{}";
+        buildUrl();
+      }
+
+      function fillExamples() {
+        const m = methodEl.value;
+
+        if (m === "GET") {
+          pathEl.value = "/students";
+          queryEl.value = "";
+          bodyEl.value = "{}";
+        } else if (m === "POST") {
+          pathEl.value = "/students";
+          queryEl.value = "";
+          bodyEl.value = pretty({ id: 4, name: "Geek4" });
+        } else if (m === "PUT") {
+          pathEl.value = "/students/3";
+          queryEl.value = "";
+          bodyEl.value = pretty({ id: 3, name: "Geek3 Updated" });
+        } else if (m === "PATCH") {
+          pathEl.value = "/students/2";
+          queryEl.value = "";
+          bodyEl.value = pretty({ name: "Geek2 Updated using Patch" });
+        } else if (m === "DELETE") {
+          pathEl.value = "/students/3";
+          queryEl.value = "";
+          bodyEl.value = "{}";
+        }
+
+        buildUrl();
+        onMethodChange();
+      }
+
+      async function send() {
+        const method = methodEl.value;
+        const url = buildUrl();
+
+        let body = undefined;
+        const headers = {};
+
+        const needsBody = (method === "POST" || method === "PUT" || method === "PATCH");
+        if (needsBody) {
+          try {
+            const parsed = JSON.parse(bodyEl.value || "{}");
+            body = JSON.stringify(parsed);
+            headers["Content-Type"] = "application/json";
+          } catch (e) {
+            setStatus("Invalid JSON body. Fix the JSON and try again.", "error");
+            outEl.textContent = String(e);
+            return;
+          }
+        }
+
+        setStatus(`Sending ${method} ${url} ...`);
+        outEl.textContent = "";
+
+        try {
+          const res = await fetch(url, { method, headers, body });
+          const contentType = res.headers.get("content-type") || "";
+
+          let payload;
+          if (contentType.includes("application/json")) {
+            payload = await res.json();
+          } else {
+            payload = await res.text();
+          }
+
+          setStatus(`Status: ${res.status} ${res.statusText}`, res.ok ? "success" : "error");
+          outEl.textContent = typeof payload === "string" ? payload : pretty(payload);
+        } catch (err) {
+          setStatus("Network error. Is your server running on the Base URL?", "error");
+          outEl.textContent = String(err);
+        }
+      }
+
+      // initialize
+      baseurlEl.addEventListener("input", buildUrl);
+      pathEl.addEventListener("input", buildUrl);
+      queryEl.addEventListener("input", buildUrl);
+      onMethodChange();
+      buildUrl();
+    </script>
+  </body>
+</html>
